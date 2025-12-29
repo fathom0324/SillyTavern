@@ -1614,14 +1614,19 @@ export async function pickFirstObjectFromJsonFile(filePath, match, maxChunks = 4
             }
         });
 
+        // This cuts the chunk after \n and stops the stream after sending the rest down the pipeline.
         const newlineTransform = new Transform({
             transform(chunk, encoding, callback) {
                 if (finished) return callback();
                 if (chunk.includes('\n')) {
+                    // Find the position of the first newline
                     const newlineIndex = chunk.indexOf('\n');
+                    // Cut the chunk at the newline position
                     this.push(chunk.slice(0, newlineIndex));
+                    // Mark as resolved to stop processing
                     cleanup();
                 } else {
+                    // No newline found, push the chunk as is
                     this.push(chunk);
                 }
                 callback();
@@ -1632,7 +1637,12 @@ export async function pickFirstObjectFromJsonFile(filePath, match, maxChunks = 4
             readStream,
             newlineTransform,
             parser(),
-            pick({ filter: (stack) => _.isEqual(stack, match), once: true }),
+            // https://github.com/uhop/stream-json/wiki/Pick
+            pick({
+                // Filter for objects with a matching stack.
+                filter: (stack) => _.isEqual(stack, match),
+                once: true, // Stop after first match
+            }),
             streamValues(),
         ]);
 
