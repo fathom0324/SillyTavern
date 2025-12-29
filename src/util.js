@@ -1588,6 +1588,7 @@ export async function pickFirstObjectFromJsonFile(filePath, match, maxChunks = 4
             }
             if (readStream && !readStream.destroyed) {
                 readStream.destroy();
+                // Do not resolve here. Wait for 'close' event to ensure file lock is released.
             }
         };
 
@@ -1595,6 +1596,7 @@ export async function pickFirstObjectFromJsonFile(filePath, match, maxChunks = 4
             if (error) {
                 reject(error);
             } else {
+                // Safe to resolve now. The file is closed.
                 resolve(foundObject);
             }
         });
